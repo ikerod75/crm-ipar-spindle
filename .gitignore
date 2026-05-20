@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# archivos de datos / scripts locales
+*.csv
+*.numbers
+*.numbers3.numbers
+reset_pass.sh
+setup-admin.js
+setup-admin.jsc
