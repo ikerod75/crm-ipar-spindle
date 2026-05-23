@@ -21,13 +21,13 @@ export default function LoginPage() {
 
   // Detect password recovery flow from URL hash
   useEffect(() => {
-    const supabase = createClient()
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setIsRecovery(true)
-      }
-    })
-    return () => subscription.unsubscribe()
+    const hash = window.location.hash
+    if (hash.includes('type=recovery')) {
+      setIsRecovery(true)
+      // Let Supabase client process the hash and establish the session
+      const supabase = createClient()
+      supabase.auth.onAuthStateChange(() => {})
+    }
   }, [])
 
   // ── Normal login ────────────────────────────────────────────────────────────
