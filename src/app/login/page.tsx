@@ -15,26 +15,23 @@ export default function LoginPage() {
   const [password, setPassword]   = useState('')
   const [loading, setLoading]     = useState(false)
   const [isRecovery, setIsRecovery] = useState(false)
+  const [recoveryTokens, setRecoveryTokens] = useState<{ access: string; refresh: string } | null>(null)
   const [newPassword, setNewPassword] = useState('')
   const [newPassword2, setNewPassword2] = useState('')
   const router = useRouter()
 
-  // Detect password recovery flow from URL hash and establish session
+  // Detect password recovery flow from URL hash
   useEffect(() => {
     const hash = window.location.hash
     if (!hash.includes('type=recovery')) return
 
-    setIsRecovery(true)
-
-    // Parse tokens from hash
     const params = new URLSearchParams(hash.slice(1))
-    const accessToken  = params.get('access_token')
-    const refreshToken = params.get('refresh_token')
+    const access  = params.get('access_token')
+    const refresh = params.get('refresh_token')
 
-    if (accessToken && refreshToken) {
-      const supabase = createClient()
-      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
-        .catch(err => console.warn('setSession error:', err))
+    if (access && refresh) {
+      setIsRecovery(true)
+      setRecoveryTokens({ access, refresh })
     }
   }, [])
 
@@ -64,8 +61,24 @@ export default function LoginPage() {
       toast.error('La contraseña debe tener al menos 6 caracteres')
       return
     }
+    if (!recoveryTokens) {
+      toast.error('Token de recuperación no encontrado. Solicita un nuevo enlace.')
+      return
+    }
     setLoading(true)
     const supabase = createClient()
+
+    // Establish session from recovery tokens first
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: recoveryTokens.access,
+      refresh_token: recoveryTokens.refresh,
+    })
+    if (sessionError) {
+      toast.error('Sesión expirada. Solicita un nuevo enlace de recuperación.')
+      setLoading(false)
+      return
+    }
+
     const { error } = await supabase.auth.updateUser({ password: newPassword })
     if (error) {
       toast.error('Error al cambiar la contraseña: ' + error.message)
