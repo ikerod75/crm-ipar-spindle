@@ -19,14 +19,22 @@ export default function LoginPage() {
   const [newPassword2, setNewPassword2] = useState('')
   const router = useRouter()
 
-  // Detect password recovery flow from URL hash
+  // Detect password recovery flow from URL hash and establish session
   useEffect(() => {
     const hash = window.location.hash
-    if (hash.includes('type=recovery')) {
-      setIsRecovery(true)
-      // Let Supabase client process the hash and establish the session
+    if (!hash.includes('type=recovery')) return
+
+    setIsRecovery(true)
+
+    // Parse tokens from hash
+    const params = new URLSearchParams(hash.slice(1))
+    const accessToken  = params.get('access_token')
+    const refreshToken = params.get('refresh_token')
+
+    if (accessToken && refreshToken) {
       const supabase = createClient()
-      supabase.auth.onAuthStateChange(() => {})
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+        .catch(err => console.warn('setSession error:', err))
     }
   }, [])
 
