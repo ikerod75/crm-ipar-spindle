@@ -66,6 +66,15 @@ export function OfertaModal({ order }: OfertaModalProps) {
   const [responsable,    setResponsable]    = useState('Iker Rodriguez')
   const [vencimiento,    setVencimiento]    = useState('Habituales con ustedes')
 
+  // Sync company address fields when modal opens
+  useEffect(() => {
+    if (!open) return
+    setDireccion(order.company?.address ?? '')
+    setCpProvincia(
+      [order.company?.city, order.company?.province].filter(Boolean).join(', ')
+    )
+  }, [open, order.company?.address, order.company?.city, order.company?.province])
+
   // Load logo once when modal opens
   useEffect(() => {
     if (!open || logoDataUrl) return
