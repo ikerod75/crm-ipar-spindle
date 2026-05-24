@@ -4,6 +4,8 @@ import { es } from 'date-fns/locale'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { ActivityDialog } from '@/components/activities/ActivityDialog'
+import { ActivityByPerson } from '@/components/activities/ActivityByPerson'
+import { ActivityTabs } from '@/components/activities/ActivityTabs'
 import {
   Phone, MapPin, Mail, MessageSquare, FileText, StickyNote, ArrowRight, CalendarClock,
 } from 'lucide-react'
@@ -13,6 +15,7 @@ type ActivityRow = Activity & {
   company: { id: string; name: string } | null
   contact: { id: string; first_name: string; last_name: string } | null
   creator: { id: string; full_name: string } | null
+  responsable: string | null
 }
 
 const typeIcon: Record<ActivityType, React.ElementType> = {
@@ -150,9 +153,9 @@ export default async function ActivitiesPage() {
 
   const { data: activities } = await supabase
     .from('activities')
-    .select('*, company:companies(id,name), contact:contacts(id,first_name,last_name), creator:profiles!created_by(id,full_name)')
+    .select('*, company:companies(id,name), contact:contacts(id,first_name,last_name), creator:profiles!created_by(id,full_name), responsable')
     .order('created_at', { ascending: false })
-    .range(0, 49)
+    .range(0, 99)
 
   const rows = (activities ?? []) as ActivityRow[]
 
@@ -176,17 +179,21 @@ export default async function ActivitiesPage() {
     return acc
   }, {})
 
-  return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Actividades comerciales</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">{rows.length} actividades recientes</p>
-        </div>
-        <ActivityDialog />
-      </div>
+  // Serialisable data for client components
+  const allActivities = rows.map(a => ({
+    id: a.id,
+    title: a.title,
+    type: a.type,
+    responsable: a.responsable ?? null,
+    next_action: a.next_action ?? null,
+    next_action_date: a.next_action_date ?? null,
+    created_at: a.created_at,
+    company: a.company ?? null,
+    contact: a.contact ?? null,
+  }))
 
+  const todasContent = (
+    <div className="space-y-6">
       {/* Pipeline próximas acciones */}
       {upcoming.length > 0 && (
         <section>
@@ -236,6 +243,24 @@ export default async function ActivitiesPage() {
           </div>
         )}
       </section>
+    </div>
+  )
+
+  return (
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Actividades comerciales</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">{rows.length} actividades recientes</p>
+        </div>
+        <ActivityDialog />
+      </div>
+
+      <ActivityTabs
+        todasContent={todasContent}
+        personaContent={<ActivityByPerson activities={allActivities} />}
+      />
     </div>
   )
 }
