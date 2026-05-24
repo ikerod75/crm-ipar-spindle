@@ -32,10 +32,14 @@ export function ActivityDialog() {
   const [outcome, setOutcome] = useState<ActivityOutcome>('neutral')
   const [nextAction, setNextAction] = useState('')
   const [nextActionDate, setNextActionDate] = useState('')
+  const [responsable, setResponsable] = useState('')
+
+  const RESPONSABLES = ['Iker', 'Dani', 'Maria', 'Zigor', 'Beñat']
 
   function resetForm() {
     setCompany(null); setContact(null); setType('llamada'); setTitle('')
     setDescription(''); setOutcome('neutral'); setNextAction(''); setNextActionDate('')
+    setResponsable('')
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -59,6 +63,7 @@ export function ActivityDialog() {
       next_action: nextAction.trim() || null,
       next_action_date: nextActionDate || null,
       created_by: user.id,
+      responsable: responsable || null,
     })
 
     setLoading(false)
@@ -144,6 +149,28 @@ export function ActivityDialog() {
                 <Label>Descripción</Label>
                 <Textarea value={description} onChange={e => setDescription(e.target.value)}
                   placeholder="Detalles de la actividad…" rows={3} />
+              </div>
+
+              {/* Responsable */}
+              <div className="col-span-2 space-y-1.5">
+                <Label>Responsable</Label>
+                <div className="flex gap-2 flex-wrap">
+                  {RESPONSABLES.map(nombre => (
+                    <button
+                      key={nombre}
+                      type="button"
+                      onClick={() => setResponsable(responsable === nombre ? '' : nombre)}
+                      className={[
+                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                        responsable === nombre
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background text-muted-foreground border-border hover:bg-muted',
+                      ].join(' ')}
+                    >
+                      {nombre}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Próxima acción */}
