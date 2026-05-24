@@ -110,17 +110,27 @@ export function ActivityDialog() {
               {/* Tipo */}
               <div className="space-y-1.5">
                 <Label>Tipo <span className="text-destructive">*</span></Label>
-                <Select value={type} onValueChange={v => setType((v ?? 'llamada') as ActivityType)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="llamada">📞 Llamada</SelectItem>
-                    <SelectItem value="visita">🏭 Visita</SelectItem>
-                    <SelectItem value="email">✉️ Email</SelectItem>
-                    <SelectItem value="whatsapp">💬 WhatsApp</SelectItem>
-                    <SelectItem value="presupuesto">📄 Presupuesto</SelectItem>
-                    <SelectItem value="nota">📝 Nota</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex rounded-md border overflow-hidden">
+                  {([
+                    { value: 'llamada', label: '📞 Llamada' },
+                    { value: 'visita',  label: '🏭 Visita' },
+                  ] as { value: ActivityType; label: string }[]).map((opt, i, arr) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setType(opt.value)}
+                      className={[
+                        'flex-1 py-2 text-sm font-medium transition-colors',
+                        i < arr.length - 1 ? 'border-r' : '',
+                        type === opt.value
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-background text-muted-foreground hover:bg-muted',
+                      ].join(' ')}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Título */}
