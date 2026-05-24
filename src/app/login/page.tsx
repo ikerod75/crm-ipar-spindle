@@ -74,7 +74,7 @@ export default function LoginPage() {
       refresh_token: recoveryTokens.refresh,
     })
     if (sessionError) {
-      toast.error('Sesión expirada. Solicita un nuevo enlace de recuperación.')
+      toast.error('Error de sesión: ' + sessionError.message)
       setLoading(false)
       return
     }
