@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Cog } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const [email, setEmail]         = useState('')
@@ -95,12 +96,15 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
       <div className="w-full max-w-md space-y-6">
         {/* Logo */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary text-primary-foreground mb-2">
-            <Cog className="w-8 h-8" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">Ipar Spindle</h1>
-          <p className="text-sm text-muted-foreground">Sistema de Gestión CRM</p>
+        <div className="flex justify-center">
+          <Image
+            src="/Logos TRAZADAS-02.jpg"
+            alt="Ipar Spindle"
+            width={280}
+            height={140}
+            className="object-contain"
+            priority
+          />
         </div>
 
         {isRecovery ? (
