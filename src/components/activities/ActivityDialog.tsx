@@ -123,20 +123,6 @@ export function ActivityDialog() {
                 </Select>
               </div>
 
-              {/* Resultado */}
-              <div className="space-y-1.5">
-                <Label>Resultado</Label>
-                <Select value={outcome} onValueChange={v => setOutcome((v ?? 'neutral') as ActivityOutcome)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="positivo">✅ Positivo</SelectItem>
-                    <SelectItem value="neutral">➖ Neutral</SelectItem>
-                    <SelectItem value="negativo">❌ Negativo</SelectItem>
-                    <SelectItem value="sin_respuesta">🔇 Sin respuesta</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               {/* Título */}
               <div className="col-span-2 space-y-1.5">
                 <Label>Título <span className="text-destructive">*</span></Label>
