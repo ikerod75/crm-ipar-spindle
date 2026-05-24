@@ -234,30 +234,6 @@ export function ServiceOrderForm({ order, trigger }: ServiceOrderFormProps = {})
                 <CompanySearch value={company} onChange={setCompany} />
               </div>
 
-              {/* Máquina */}
-              <div className="space-y-1.5">
-                <Label>Máquina</Label>
-                <Select
-                  value={machineId}
-                  onValueChange={v => setMachineId(v ?? '')}
-                  disabled={!company || machines.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={
-                      !company ? 'Selecciona primero una empresa'
-                      : machines.length === 0 ? 'Sin máquinas registradas'
-                      : 'Seleccionar máquina…'
-                    } />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Sin máquina</SelectItem>
-                    {machines.map(m => (
-                      <SelectItem key={m.id} value={m.id}>{m.brand} {m.model}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
               {/* Contacto */}
               <div className="space-y-1.5">
                 <Label>Contacto</Label>
@@ -317,20 +293,6 @@ export function ServiceOrderForm({ order, trigger }: ServiceOrderFormProps = {})
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {/* Importe */}
-              <div className="space-y-1.5">
-                <Label>Importe (€)</Label>
-                <Input type="number" min="0" step="0.01" value={amount}
-                  onChange={e => setAmount(e.target.value)} placeholder="0.00" />
-              </div>
-
-              {/* Coste estimado */}
-              <div className="space-y-1.5">
-                <Label>Coste estimado (€)</Label>
-                <Input type="number" min="0" step="0.01" value={costEstimate}
-                  onChange={e => setCostEstimate(e.target.value)} placeholder="0.00" />
               </div>
 
               {/* Fecha recepción */}
