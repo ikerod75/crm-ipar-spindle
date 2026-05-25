@@ -43,7 +43,7 @@ export function ServiceOrderForm({ order, trigger }: ServiceOrderFormProps = {})
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [machines, setMachines] = useState<Machine[]>([])
-  const [users, setUsers] = useState<UserProfile[]>([])
+  const [users, setUsers] = useState<UserProfile[]>([]) // kept for future use
 
   // ── form state ──────────────────────────────────────────────────────────────
   const [orderNumber, setOrderNumber] = useState(order?.order_number ?? '')
@@ -310,13 +310,23 @@ export function ServiceOrderForm({ order, trigger }: ServiceOrderFormProps = {})
               {/* Técnico */}
               <div className="col-span-2 space-y-1.5">
                 <Label>Técnico asignado</Label>
-                <Select value={assignedTo} onValueChange={v => setAssignedTo(v ?? '')}>
-                  <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Sin asignar</SelectItem>
-                    {users.map(u => <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2 flex-wrap">
+                  {['Zigor', 'Beñat', 'Dani', 'Iker'].map(nombre => (
+                    <button
+                      key={nombre}
+                      type="button"
+                      onClick={() => setAssignedTo(assignedTo === nombre ? '' : nombre)}
+                      className={[
+                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                        assignedTo === nombre
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background text-muted-foreground border-border hover:bg-muted',
+                      ].join(' ')}
+                    >
+                      {nombre}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Notas */}
