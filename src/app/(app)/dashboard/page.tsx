@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DashboardCharts } from '@/components/dashboard/DashboardCharts'
+import { DashboardClock } from '@/components/dashboard/DashboardClock'
 import {
   Building2,
   TrendingUp,
@@ -162,12 +163,15 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Resumen comercial · {format(now, "d 'de' MMMM yyyy", { locale: es })}
-        </p>
+      {/* Header: clock left + title right */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-border">
+        <DashboardClock />
+        <div className="text-right shrink-0">
+          <h1 className="text-xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground text-xs mt-0.5">
+            Resumen comercial
+          </p>
+        </div>
       </div>
 
       {/* KPI Cards */}
