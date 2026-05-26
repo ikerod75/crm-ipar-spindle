@@ -23,11 +23,11 @@ interface Machine { id: string; brand: string; model: string | null; company_id:
 interface UserProfile { id: string; full_name: string }
 
 // Full order row shape coming from the table (with joins)
-type OrderRow = ServiceOrder & {
-  company: { id: string; name: string } | null
+type OrderRow = Omit<ServiceOrder, 'assignee' | 'company' | 'machine' | 'contact'> & {
+  company: { id: string; name: string; address?: string | null; city?: string | null; province?: string | null } | null
   contact: { id: string; first_name: string; last_name: string; company_id: string } | null
   machine: { id: string; brand: string; model: string | null; company_id: string } | null
-  assignee: { id: string; full_name: string } | null
+  assignee: null
 }
 
 interface ServiceOrderFormProps {
