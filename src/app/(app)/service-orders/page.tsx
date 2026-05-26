@@ -12,6 +12,7 @@ type ServiceOrderRow = Omit<ServiceOrder, 'assignee' | 'company' | 'machine' | '
   company: { id: string; name: string; address: string | null; city: string | null; province: string | null } | null
   machine: { id: string; brand: string; model: string | null; company_id: string } | null
   contact: { id: string; first_name: string; last_name: string; company_id: string } | null
+  assignee: null
 }
 
 export default async function ServiceOrdersPage() {
