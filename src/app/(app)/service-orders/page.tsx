@@ -18,11 +18,13 @@ type ServiceOrderRow = ServiceOrder & {
 export default async function ServiceOrdersPage() {
   const supabase = await createClient()
 
-  const { data: orders } = await supabase
+  const { data: orders, error: ordersError } = await supabase
     .from('service_orders')
-    .select('*, company:companies(id,name,address,city,province), machine:machines(id,brand,model,company_id), contact:contacts(id,first_name,last_name,company_id)')
+    .select('*, company:companies(id,name,address,city,province), contact:contacts(id,first_name,last_name,company_id)')
     .order('created_at', { ascending: false })
-    .range(0, 49)
+    .range(0, 99)
+
+  console.log('[ServiceOrders] count:', orders?.length, 'error:', ordersError?.message)
 
   const rows = (orders ?? []) as ServiceOrderRow[]
 
