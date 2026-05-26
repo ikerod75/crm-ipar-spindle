@@ -8,7 +8,7 @@ import { ServiceOrdersTable } from '@/components/service-orders/ServiceOrdersTab
 import { Wrench } from 'lucide-react'
 import type { ServiceOrder, ServiceStatus, ServiceType } from '@/types/database'
 
-type ServiceOrderRow = Omit<ServiceOrder, 'assignee'> & {
+type ServiceOrderRow = Omit<ServiceOrder, 'assignee' | 'company' | 'machine' | 'contact'> & {
   company: { id: string; name: string; address: string | null; city: string | null; province: string | null } | null
   machine: { id: string; brand: string; model: string | null; company_id: string } | null
   contact: { id: string; first_name: string; last_name: string; company_id: string } | null
