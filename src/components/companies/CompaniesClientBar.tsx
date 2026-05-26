@@ -12,7 +12,6 @@ interface CompaniesClientBarProps {
   provinces: string[]
   currentParams: {
     search?: string
-    segment?: string
     province?: string
     priority?: string
   }
@@ -24,37 +23,33 @@ export function CompaniesClientBar({ provinces, currentParams }: CompaniesClient
   const [isPending, startTransition] = useTransition()
 
   const [search, setSearch] = useState(currentParams.search || '')
-  const [segment, setSegment] = useState(currentParams.segment || '')
   const [province, setProvince] = useState(currentParams.province || '')
   const [priority, setPriority] = useState(currentParams.priority || '')
 
   const applyFilters = useCallback(
-    (overrides?: { search?: string; segment?: string; province?: string; priority?: string }) => {
+    (overrides?: { search?: string; province?: string; priority?: string }) => {
       const params = new URLSearchParams()
       const s = overrides?.search ?? search
-      const seg = overrides?.segment ?? segment
       const prov = overrides?.province ?? province
       const pri = overrides?.priority ?? priority
       if (s) params.set('search', s)
-      if (seg) params.set('segment', seg)
       if (prov) params.set('province', prov)
       if (pri) params.set('priority', pri)
       startTransition(() => {
         router.push(`${pathname}?${params.toString()}`)
       })
     },
-    [search, segment, province, priority, pathname, router]
+    [search, province, priority, pathname, router]
   )
 
   const clearFilters = () => {
     setSearch('')
-    setSegment('')
     setProvince('')
     setPriority('')
     startTransition(() => router.push(pathname))
   }
 
-  const hasFilters = !!(currentParams.search || currentParams.segment || currentParams.province || currentParams.priority)
+  const hasFilters = !!(currentParams.search || currentParams.province || currentParams.priority)
 
   return (
     <div className="w-full space-y-3">
@@ -71,21 +66,6 @@ export function CompaniesClientBar({ provinces, currentParams }: CompaniesClient
             className="pl-8 h-8 text-sm"
           />
         </div>
-
-        {/* Segment filter */}
-        <select
-          value={segment}
-          onChange={(e) => {
-            setSegment(e.target.value)
-            applyFilters({ segment: e.target.value })
-          }}
-          className="h-8 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-        >
-          <option value="">Todos los segmentos</option>
-          <option value="potencial">Potencial</option>
-          <option value="activo">Activo</option>
-          <option value="recurrente">Recurrente</option>
-        </select>
 
         {/* Province filter */}
         {provinces.length > 0 && (

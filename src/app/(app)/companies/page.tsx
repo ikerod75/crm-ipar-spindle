@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Building2, Eye } from 'lucide-react'
 import { CompaniesClientBar } from '@/components/companies/CompaniesClientBar'
 import { DeleteCompanyButton } from '@/components/companies/DeleteCompanyButton'
-import type { CompanySegment, CompanyPriority } from '@/types/database'
+import type { CompanyPriority } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +18,6 @@ type CompanyRow = {
   address: string | null
   city: string | null
   province: string | null
-  segment: CompanySegment
   priority: CompanyPriority | null
 }
 
@@ -33,7 +32,6 @@ type PrimaryContact = {
 
 interface SearchParams {
   search?: string
-  segment?: string
   province?: string
   priority?: string
   page?: string
@@ -69,15 +67,12 @@ export default async function CompaniesPage({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query = (supabase as any)
     .from('companies')
-    .select('id, company_number, name, address, city, province, segment, priority', { count: 'exact' })
+    .select('id, company_number, name, address, city, province, priority', { count: 'exact' })
     .order('company_number', { ascending: true })
     .range(offset, offset + PAGE_SIZE - 1)
 
   if (params.search) {
     query = query.ilike('name', `%${params.search}%`)
-  }
-  if (params.segment && ['potencial', 'activo', 'recurrente'].includes(params.segment)) {
-    query = query.eq('segment', params.segment as CompanySegment)
   }
   if (params.province) {
     query = query.ilike('province', `%${params.province}%`)
