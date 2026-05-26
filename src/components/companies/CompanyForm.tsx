@@ -253,22 +253,8 @@ export function CompanyForm({ company, onSuccess, onCancel }: CompanyFormProps) 
         </div>
       </div>
 
-      {/* Row 5: Segment + Priority + Size */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="segment">Segmento</Label>
-          <select
-            id="segment"
-            name="segment"
-            value={formData.segment}
-            onChange={handleChange}
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-          >
-            <option value="potencial">Potencial</option>
-            <option value="activo">Activo</option>
-            <option value="recurrente">Recurrente</option>
-          </select>
-        </div>
+      {/* Row 5: Priority + Size */}
+      <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="priority">Prioridad</Label>
           <select
