@@ -1,23 +1,30 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { DashboardCharts } from '@/components/dashboard/DashboardCharts'
-import { Building2, TrendingUp, AlertTriangle, CalendarClock, Activity } from 'lucide-react'
+import {
+  Building2,
+  TrendingUp,
+  AlertTriangle,
+  CalendarClock,
+  Activity,
+  FileText,
+  Wrench,
+} from 'lucide-react'
 import { format, subDays, subMonths, startOfYear } from 'date-fns'
 import { es } from 'date-fns/locale'
 import Link from 'next/link'
-import type { CompanySegment } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
 
-type CompanyRow = { id: string; name: string; segment: CompanySegment }
 type OrderRow = {
   id: string
+  order_number: string
   status: string
   amount: number | null
   created_at: string
   company_id: string
-  companies: { name: string } | null
+  title: string
+  companies: { name: string; id: string } | null
 }
 type ActivityRow = {
   id: string
@@ -29,6 +36,7 @@ type ActivityRow = {
   outcome: string | null
   companies: { name: string; id: string } | null
 }
+type CompanyRow = { id: string; name: string }
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
@@ -36,6 +44,8 @@ function formatCurrency(amount: number) {
 
 export default async function DashboardPage() {
   const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as any
   const now = new Date()
   const ytdStart = startOfYear(now).toISOString()
   const lastYearStart = startOfYear(new Date(now.getFullYear() - 1, 0, 1)).toISOString()
@@ -43,44 +53,60 @@ export default async function DashboardPage() {
   const next7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
   const last90Days = subDays(now, 90).toISOString()
 
-  // --- Parallel fetches ---
   const [
-    companiesRes,
-    serviceOrdersRes,
+    allOrdersRes,
     ytdOrdersRes,
     lastYearOrdersRes,
+    presupuestosRes,
+    enCursoRes,
     upcomingActivitiesRes,
     recentActivitiesRes,
     allCompaniesRes,
   ] = await Promise.all([
-    supabase.from('companies').select('id, segment'),
-    supabase.from('service_orders').select('id, status, amount, created_at, company_id, companies(name)'),
-    supabase.from('service_orders').select('amount').eq('status', 'finalizado').gte('created_at', ytdStart),
-    supabase.from('service_orders').select('amount').eq('status', 'finalizado').gte('created_at', lastYearStart).lte('created_at', lastYearEnd),
-    supabase
-      .from('activities')
+    // All orders for chart + top clients
+    sb.from('service_orders').select('id, order_number, title, status, amount, created_at, company_id, companies(name, id)'),
+    // YTD revenue (finalizada)
+    sb.from('service_orders').select('amount').eq('status', 'finalizada').gte('created_at', ytdStart),
+    // Last year revenue
+    sb.from('service_orders').select('amount').eq('status', 'finalizada').gte('created_at', lastYearStart).lte('created_at', lastYearEnd),
+    // Open quotes (presupuesto) — not yet converted to en_curso
+    sb.from('service_orders')
+      .select('id, order_number, title, amount, created_at, company_id, companies(name, id)')
+      .eq('status', 'presupuesto')
+      .order('created_at', { ascending: false })
+      .limit(8),
+    // Orders in progress
+    sb.from('service_orders')
+      .select('id, order_number, title, amount, created_at, company_id, companies(name, id)')
+      .eq('status', 'en_curso')
+      .order('created_at', { ascending: false })
+      .limit(8),
+    // Upcoming next actions (next 7 days)
+    sb.from('activities')
       .select('id, title, next_action_date, next_action, company_id, companies(name, id)')
       .gte('next_action_date', now.toISOString().slice(0, 10))
       .lte('next_action_date', next7Days.slice(0, 10))
       .order('next_action_date', { ascending: true })
       .limit(10),
-    supabase
-      .from('activities')
+    // Recent activities
+    sb.from('activities')
       .select('id, type, title, created_at, company_id, outcome, companies(name, id)')
       .order('created_at', { ascending: false })
       .limit(5),
-    supabase.from('companies').select('id, name, segment'),
+    // All companies for inactive check
+    sb.from('companies').select('id, name'),
   ])
 
-  const companies = (companiesRes.data ?? []) as CompanyRow[]
-  const serviceOrders = (serviceOrdersRes.data ?? []) as OrderRow[]
+  const allOrders = (allOrdersRes.data ?? []) as OrderRow[]
   const ytdOrders = (ytdOrdersRes.data ?? []) as { amount: number | null }[]
   const lastYearOrders = (lastYearOrdersRes.data ?? []) as { amount: number | null }[]
+  const presupuestos = (presupuestosRes.data ?? []) as OrderRow[]
+  const enCurso = (enCursoRes.data ?? []) as OrderRow[]
   const upcomingActivities = (upcomingActivitiesRes.data ?? []) as ActivityRow[]
   const recentActivities = (recentActivitiesRes.data ?? []) as ActivityRow[]
   const allCompanies = (allCompaniesRes.data ?? []) as CompanyRow[]
 
-  // --- Companies with no recent activity ---
+  // --- Companies with no recent activity (90 days) ---
   const recentActivityRes = await supabase
     .from('activities')
     .select('company_id')
@@ -90,17 +116,8 @@ export default async function DashboardPage() {
     ((recentActivityRes.data ?? []) as { company_id: string }[]).map((a) => a.company_id)
   )
   const inactiveCompanies = allCompanies
-    .filter((c) => c.segment !== 'potencial' && !activeSet.has(c.id))
-    .slice(0, 5)
-
-  // --- Segment counts ---
-  const segmentCounts = companies.reduce(
-    (acc, c) => {
-      acc[c.segment] = (acc[c.segment] || 0) + 1
-      return acc
-    },
-    {} as Record<string, number>
-  )
+    .filter((c) => !activeSet.has(c.id))
+    .slice(0, 6)
 
   // --- Revenue ---
   const ytdRevenue = ytdOrders.reduce((sum, o) => sum + (o.amount || 0), 0)
@@ -109,12 +126,15 @@ export default async function DashboardPage() {
     lastYearRevenue > 0 ? ((ytdRevenue - lastYearRevenue) / lastYearRevenue) * 100 : null
 
   // --- Top 5 companies by revenue ---
-  const companyRevenue: Record<string, { name: string; total: number }> = {}
-  for (const order of serviceOrders) {
-    if (order.status === 'finalizado' && order.company_id && order.amount) {
-      const compName = order.companies?.name || order.company_id
+  const companyRevenue: Record<string, { name: string; id: string; total: number }> = {}
+  for (const order of allOrders) {
+    if (order.status === 'finalizada' && order.company_id && order.amount) {
       if (!companyRevenue[order.company_id]) {
-        companyRevenue[order.company_id] = { name: compName, total: 0 }
+        companyRevenue[order.company_id] = {
+          name: order.companies?.name || order.company_id,
+          id: order.companies?.id || order.company_id,
+          total: 0,
+        }
       }
       companyRevenue[order.company_id].total += order.amount
     }
@@ -130,7 +150,7 @@ export default async function DashboardPage() {
     const key = format(d, 'MMM yy', { locale: es })
     monthlyMap[key] = { count: 0, amount: 0 }
   }
-  for (const order of serviceOrders) {
+  for (const order of allOrders) {
     const d = new Date(order.created_at)
     const key = format(d, 'MMM yy', { locale: es })
     if (monthlyMap[key] !== undefined) {
@@ -156,6 +176,10 @@ export default async function DashboardPage() {
     sin_respuesta: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
   }
 
+  // Presupuesto value total
+  const presupuestosTotal = presupuestos.reduce((sum, o) => sum + (o.amount || 0), 0)
+  const enCursoTotal = enCurso.reduce((sum, o) => sum + (o.amount || 0), 0)
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -168,45 +192,53 @@ export default async function DashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Open quotes */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Potencial
+              <FileText className="h-4 w-4 text-blue-500" />
+              Presupuestos abiertos
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{segmentCounts.potencial || 0}</p>
-            <p className="text-xs text-muted-foreground mt-1">empresas en pipeline</p>
+            <p className="text-3xl font-bold">{presupuestos.length}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {presupuestosTotal > 0 ? formatCurrency(presupuestosTotal) : 'Sin importe'}
+            </p>
           </CardContent>
         </Card>
 
+        {/* In progress */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-green-600" />
-              Activos
+              <Wrench className="h-4 w-4 text-yellow-500" />
+              En curso
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{segmentCounts.activo || 0}</p>
-            <p className="text-xs text-muted-foreground mt-1">clientes activos</p>
+            <p className="text-3xl font-bold">{enCurso.length}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {enCursoTotal > 0 ? formatCurrency(enCursoTotal) : 'Sin importe'}
+            </p>
           </CardContent>
         </Card>
 
+        {/* Inactive companies */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-amber-600" />
-              Recurrente
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              Sin actividad 90d
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{segmentCounts.recurrente || 0}</p>
-            <p className="text-xs text-muted-foreground mt-1">clientes recurrentes</p>
+            <p className="text-3xl font-bold">{inactiveCompanies.length}</p>
+            <p className="text-xs text-muted-foreground mt-1">empresas sin contacto</p>
           </CardContent>
         </Card>
 
+        {/* YTD Revenue */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -217,30 +249,59 @@ export default async function DashboardPage() {
           <CardContent>
             <p className="text-2xl font-bold">{formatCurrency(ytdRevenue)}</p>
             {revenueGrowth !== null && (
-              <p
-                className={`text-xs mt-1 font-medium ${
-                  revenueGrowth >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}
-              >
-                {revenueGrowth >= 0 ? '+' : ''}
-                {revenueGrowth.toFixed(1)}% vs año anterior
+              <p className={`text-xs mt-1 font-medium ${revenueGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {revenueGrowth >= 0 ? '+' : ''}{revenueGrowth.toFixed(1)}% vs año anterior
               </p>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Chart + Upcoming actions */}
+      {/* Open quotes list + upcoming actions */}
       <div className="grid lg:grid-cols-3 gap-4">
+        {/* Presupuestos abiertos */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">Órdenes de servicio · últimos 12 meses</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileText className="h-4 w-4 text-blue-500" />
+              Presupuestos pendientes de convertir
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <DashboardCharts monthlyData={monthlyData} />
+            {presupuestos.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No hay presupuestos abiertos.</p>
+            ) : (
+              <div className="space-y-2">
+                {presupuestos.map((order) => (
+                  <div key={order.id} className="flex items-center justify-between gap-3 border-b pb-2 last:border-0">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{order.title}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs font-mono text-muted-foreground">{order.order_number}</span>
+                        {order.companies && (
+                          <Link href={`/companies/${order.companies.id}`} className="text-xs text-primary hover:underline truncate">
+                            {order.companies.name}
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      {order.amount != null
+                        ? <span className="text-sm font-semibold">{formatCurrency(order.amount)}</span>
+                        : <span className="text-xs text-muted-foreground">—</span>
+                      }
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(order.created_at), 'd MMM', { locale: es })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
+        {/* Próximas acciones */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -250,7 +311,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {upcomingActivities.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Sin acciones programadas en los próximos 7 días.</p>
+              <p className="text-sm text-muted-foreground">Sin acciones en los próximos 7 días.</p>
             ) : (
               upcomingActivities.map((act) => (
                 <div key={act.id} className="flex flex-col gap-0.5 border-b pb-2 last:border-0">
@@ -265,10 +326,7 @@ export default async function DashboardPage() {
                     </span>
                   </div>
                   {act.companies && (
-                    <Link
-                      href={`/companies/${act.companies.id}`}
-                      className="text-xs text-primary hover:underline truncate"
-                    >
+                    <Link href={`/companies/${act.companies.id}`} className="text-xs text-primary hover:underline truncate">
                       {act.companies.name}
                     </Link>
                   )}
@@ -278,6 +336,16 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Órdenes de servicio · últimos 12 meses</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DashboardCharts monthlyData={monthlyData} />
+        </CardContent>
+      </Card>
 
       {/* Bottom row */}
       <div className="grid lg:grid-cols-3 gap-4">
@@ -301,20 +369,13 @@ export default async function DashboardPage() {
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium truncate">{act.title}</p>
                         {act.outcome && (
-                          <span
-                            className={`text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
-                              outcomeColor[act.outcome] || ''
-                            }`}
-                          >
+                          <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0 ${outcomeColor[act.outcome] || ''}`}>
                             {act.outcome}
                           </span>
                         )}
                       </div>
                       {act.companies && (
-                        <Link
-                          href={`/companies/${act.companies.id}`}
-                          className="text-xs text-primary hover:underline"
-                        >
+                        <Link href={`/companies/${act.companies.id}`} className="text-xs text-primary hover:underline">
                           {act.companies.name}
                         </Link>
                       )}
@@ -331,7 +392,7 @@ export default async function DashboardPage() {
 
         {/* Right column */}
         <div className="space-y-4">
-          {/* Inactive alert */}
+          {/* Inactive companies */}
           <Card className="border-amber-200 dark:border-amber-900">
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2 text-amber-700 dark:text-amber-400">
@@ -346,12 +407,8 @@ export default async function DashboardPage() {
                 <ul className="space-y-1.5">
                   {inactiveCompanies.map((c) => (
                     <li key={c.id}>
-                      <Link
-                        href={`/companies/${c.id}`}
-                        className="text-sm hover:underline text-foreground flex items-center justify-between"
-                      >
-                        <span className="truncate">{c.name}</span>
-                        <SegmentBadge segment={c.segment} />
+                      <Link href={`/companies/${c.id}`} className="text-sm hover:underline text-foreground truncate block">
+                        {c.name}
                       </Link>
                     </li>
                   ))}
@@ -360,17 +417,20 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Top companies */}
+          {/* Top clients by revenue */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Top clientes</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Top clientes
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {top5Companies.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Sin datos de facturación.</p>
               ) : (
                 <ol className="space-y-2">
-                  {top5Companies.map(([id, { name, total }], idx) => (
+                  {top5Companies.map(([, { name, id, total }], idx) => (
                     <li key={id} className="flex items-center gap-2">
                       <span className="text-xs font-bold text-muted-foreground w-4">{idx + 1}.</span>
                       <Link href={`/companies/${id}`} className="text-sm hover:underline flex-1 truncate">
@@ -388,27 +448,5 @@ export default async function DashboardPage() {
         </div>
       </div>
     </div>
-  )
-}
-
-function SegmentBadge({ segment }: { segment: string }) {
-  if (segment === 'potencial') {
-    return (
-      <Badge className="text-xs py-0 px-1.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-0">
-        potencial
-      </Badge>
-    )
-  }
-  if (segment === 'activo') {
-    return (
-      <Badge className="text-xs py-0 px-1.5 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-0">
-        activo
-      </Badge>
-    )
-  }
-  return (
-    <Badge className="text-xs py-0 px-1.5 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-0">
-      recurrente
-    </Badge>
   )
 }
