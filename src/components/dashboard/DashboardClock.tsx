@@ -35,7 +35,7 @@ export function DashboardClock() {
     <div className="flex flex-col justify-center">
       {/* Time */}
       <div className="font-mono font-bold leading-none tracking-tight text-foreground"
-        style={{ fontSize: 'clamp(3rem, 6vw, 5rem)' }}>
+        style={{ fontSize: 'clamp(4.5rem, 9vw, 8rem)' }}>
         {hh}
         <span className="opacity-50 animate-pulse">:</span>
         {mm}
@@ -43,8 +43,8 @@ export function DashboardClock() {
         {ss}
       </div>
       {/* Date */}
-      <div className="mt-2 text-muted-foreground font-medium tracking-widest uppercase"
-        style={{ fontSize: 'clamp(0.75rem, 1.2vw, 1rem)' }}>
+      <div className="mt-3 text-muted-foreground font-medium tracking-widest uppercase"
+        style={{ fontSize: 'clamp(0.7rem, 1vw, 0.875rem)' }}>
         {day}, {date} DE {month} DE {year}
       </div>
     </div>
