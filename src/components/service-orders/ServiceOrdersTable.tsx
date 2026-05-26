@@ -18,7 +18,7 @@ import { OfertaModal } from '@/components/service-orders/OfertaModal'
 
 type ServiceOrderRow = ServiceOrder & {
   company: { id: string; name: string; address: string | null; city: string | null; province: string | null } | null
-  assignee: { id: string; full_name: string } | null
+  assignee: null
   machine: { id: string; brand: string; model: string | null; company_id: string } | null
   contact: { id: string; first_name: string; last_name: string; company_id: string } | null
 }
@@ -199,7 +199,7 @@ export function ServiceOrdersTable({ orders }: { orders: ServiceOrderRow[] }) {
                       {fmtAmount(order.amount)}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">
-                      {order.assignee?.full_name ?? '—'}
+                      {order.assigned_to ?? '—'}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
                       {fmtDate(order.received_date)}
