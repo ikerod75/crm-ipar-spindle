@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { createClient } from '@/lib/supabase/server'
 import { formatDistanceToNow, isWithinInterval, addDays, parseISO, format } from 'date-fns'
 import { es } from 'date-fns/locale'
