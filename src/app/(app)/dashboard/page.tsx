@@ -4,13 +4,12 @@ import { DashboardCharts } from '@/components/dashboard/DashboardCharts'
 import {
   Building2,
   TrendingUp,
-  AlertTriangle,
   CalendarClock,
   Activity,
   FileText,
   Wrench,
 } from 'lucide-react'
-import { format, subDays, subMonths, startOfYear } from 'date-fns'
+import { format, subMonths, startOfYear } from 'date-fns'
 import { es } from 'date-fns/locale'
 import Link from 'next/link'
 
@@ -36,7 +35,6 @@ type ActivityRow = {
   outcome: string | null
   companies: { name: string; id: string } | null
 }
-type CompanyRow = { id: string; name: string }
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
@@ -51,7 +49,6 @@ export default async function DashboardPage() {
   const lastYearStart = startOfYear(new Date(now.getFullYear() - 1, 0, 1)).toISOString()
   const lastYearEnd = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59).toISOString()
   const next7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
-  const last90Days = subDays(now, 90).toISOString()
 
   const [
     allOrdersRes,
@@ -61,7 +58,6 @@ export default async function DashboardPage() {
     enCursoRes,
     upcomingActivitiesRes,
     recentActivitiesRes,
-    allCompaniesRes,
   ] = await Promise.all([
     // All orders for chart + top clients
     sb.from('service_orders').select('id, order_number, title, status, amount, created_at, company_id, companies(name, id)'),
@@ -93,8 +89,6 @@ export default async function DashboardPage() {
       .select('id, type, title, created_at, company_id, outcome, companies(name, id)')
       .order('created_at', { ascending: false })
       .limit(5),
-    // All companies for inactive check
-    sb.from('companies').select('id, name'),
   ])
 
   const allOrders = (allOrdersRes.data ?? []) as OrderRow[]
@@ -104,20 +98,6 @@ export default async function DashboardPage() {
   const enCurso = (enCursoRes.data ?? []) as OrderRow[]
   const upcomingActivities = (upcomingActivitiesRes.data ?? []) as ActivityRow[]
   const recentActivities = (recentActivitiesRes.data ?? []) as ActivityRow[]
-  const allCompanies = (allCompaniesRes.data ?? []) as CompanyRow[]
-
-  // --- Companies with no recent activity (90 days) ---
-  const recentActivityRes = await supabase
-    .from('activities')
-    .select('company_id')
-    .gte('created_at', last90Days)
-
-  const activeSet = new Set(
-    ((recentActivityRes.data ?? []) as { company_id: string }[]).map((a) => a.company_id)
-  )
-  const inactiveCompanies = allCompanies
-    .filter((c) => !activeSet.has(c.id))
-    .slice(0, 6)
 
   // --- Revenue ---
   const ytdRevenue = ytdOrders.reduce((sum, o) => sum + (o.amount || 0), 0)
@@ -191,7 +171,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Open quotes */}
         <Card>
           <CardHeader className="pb-2">
@@ -221,20 +201,6 @@ export default async function DashboardPage() {
             <p className="text-xs text-muted-foreground mt-1">
               {enCursoTotal > 0 ? formatCurrency(enCursoTotal) : 'Sin importe'}
             </p>
-          </CardContent>
-        </Card>
-
-        {/* Inactive companies */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
-              Sin actividad 90d
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{inactiveCompanies.length}</p>
-            <p className="text-xs text-muted-foreground mt-1">empresas sin contacto</p>
           </CardContent>
         </Card>
 
@@ -392,31 +358,6 @@ export default async function DashboardPage() {
 
         {/* Right column */}
         <div className="space-y-4">
-          {/* Inactive companies */}
-          <Card className="border-amber-200 dark:border-amber-900">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                <AlertTriangle className="h-4 w-4" />
-                Sin actividad 90 días
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {inactiveCompanies.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Todo al día.</p>
-              ) : (
-                <ul className="space-y-1.5">
-                  {inactiveCompanies.map((c) => (
-                    <li key={c.id}>
-                      <Link href={`/companies/${c.id}`} className="text-sm hover:underline text-foreground truncate block">
-                        {c.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Top clients by revenue */}
           <Card>
             <CardHeader className="pb-2">
