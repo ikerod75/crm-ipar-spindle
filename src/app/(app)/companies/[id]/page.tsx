@@ -33,25 +33,6 @@ import type {
 
 export const dynamic = 'force-dynamic'
 
-function SegmentBadge({ segment }: { segment: string }) {
-  if (segment === 'potencial')
-    return (
-      <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-0">
-        Potencial
-      </Badge>
-    )
-  if (segment === 'activo')
-    return (
-      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-0">
-        Activo
-      </Badge>
-    )
-  return (
-    <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-0">
-      Recurrente
-    </Badge>
-  )
-}
 
 const activityIcon: Record<string, string> = {
   llamada: '📞',
@@ -138,7 +119,6 @@ export default async function CompanyDetailPage({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl font-bold">{company.name}</h1>
-              <SegmentBadge segment={company.segment} />
               {company.priority && (
                 <Badge className={`border-0 font-bold text-xs px-2 ${
                   company.priority === 'A' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
