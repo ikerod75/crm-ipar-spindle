@@ -16,9 +16,8 @@ import {
 import { ServiceOrderForm } from '@/components/service-orders/ServiceOrderForm'
 import { OfertaModal } from '@/components/service-orders/OfertaModal'
 
-type ServiceOrderRow = ServiceOrder & {
+type ServiceOrderRow = Omit<ServiceOrder, 'assignee'> & {
   company: { id: string; name: string; address: string | null; city: string | null; province: string | null } | null
-  assignee: null
   machine: { id: string; brand: string; model: string | null; company_id: string } | null
   contact: { id: string; first_name: string; last_name: string; company_id: string } | null
 }
