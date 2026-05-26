@@ -24,7 +24,6 @@ export default async function ServiceOrdersPage() {
     .order('created_at', { ascending: false })
     .range(0, 99)
 
-  console.log('[ServiceOrders] count:', orders?.length, 'error:', ordersError?.message)
 
   const rows = (orders ?? []) as ServiceOrderRow[]
 
