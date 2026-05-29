@@ -34,17 +34,15 @@ export function DashboardClock() {
   return (
     <div className="flex flex-col justify-center">
       {/* Time */}
-      <div className="font-mono font-bold leading-none tracking-tight text-foreground"
-        style={{ fontSize: 'clamp(4.5rem, 9vw, 8rem)' }}>
+      <div className="font-mono font-bold leading-none tracking-tight text-foreground text-3xl">
         {hh}
-        <span className="opacity-50 animate-pulse">:</span>
+        <span className="opacity-40 animate-pulse">:</span>
         {mm}
-        <span className="opacity-50 animate-pulse">:</span>
+        <span className="opacity-40 animate-pulse">:</span>
         {ss}
       </div>
       {/* Date */}
-      <div className="mt-3 text-muted-foreground font-medium tracking-widest uppercase"
-        style={{ fontSize: 'clamp(0.7rem, 1vw, 0.875rem)' }}>
+      <div className="mt-1 text-muted-foreground font-medium tracking-wider uppercase text-[0.65rem]">
         {day}, {date} DE {month} DE {year}
       </div>
     </div>
