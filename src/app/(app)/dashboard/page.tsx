@@ -165,11 +165,11 @@ export default async function DashboardPage() {
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
-        <DashboardClock />
-        <div className="text-right">
+        <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Resumen comercial</p>
         </div>
+        <DashboardClock />
       </div>
 
       {/* KPI Cards */}
